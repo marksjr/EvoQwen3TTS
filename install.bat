@@ -145,18 +145,33 @@ if %errorlevel% equ 0 (
 )
 
 echo.
-echo [4/6] Checking PyTorch with CUDA...
-%PYTHON_CMD% -c "import torch; print(torch.cuda.is_available())" 2>nul | findstr "True" >nul 2>&1
-if %errorlevel% equ 0 (
-    for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v with CUDA is already installed
-) else (
-    echo   Installing PyTorch with CUDA 12.6...
-    %PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cu126 --no-warn-script-location -q
-    if %errorlevel% neq 0 (
-        echo   [ERROR] Failed to install PyTorch.
-        goto :error_exit
+echo [4/6] Checking PyTorch...
+if "%USE_CPU%"=="1" (
+    %PYTHON_CMD% -c "import torch; print(torch.__version__)" 2>nul >nul
+    if %errorlevel% equ 0 (
+        for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v is already installed
+    ) else (
+        echo   Installing PyTorch for CPU...
+        %PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cpu --no-warn-script-location -q
+        if %errorlevel% neq 0 (
+            echo   [ERROR] Failed to install PyTorch.
+            goto :error_exit
+        )
+        echo   [OK] PyTorch installed
     )
-    echo   [OK] PyTorch installed
+) else (
+    %PYTHON_CMD% -c "import torch; print(torch.cuda.is_available())" 2>nul | findstr "True" >nul 2>&1
+    if %errorlevel% equ 0 (
+        for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v with CUDA is already installed
+    ) else (
+        echo   Installing PyTorch with CUDA 12.6...
+        %PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cu126 --no-warn-script-location -q
+        if %errorlevel% neq 0 (
+            echo   [ERROR] Failed to install PyTorch.
+            goto :error_exit
+        )
+        echo   [OK] PyTorch installed
+    )
 )
 
 echo.

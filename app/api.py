@@ -138,7 +138,8 @@ def transcribe_references():
     finally:
         if whisper_model is not None:
             del whisper_model
-        torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     update_startup_status(phase="ready", is_transcribing=False, current_voice=None)
     print("Transcriptions completed.")
@@ -771,5 +772,6 @@ def serve_docs_html():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
+
 
 

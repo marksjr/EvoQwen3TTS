@@ -62,16 +62,21 @@ def get_transcription(voice: str):
 def load_model(size: str):
     path = MODEL_PATHS[size]
     print(f"Carregando modelo {size}...")
+    
+    device_map = "cuda:0" if torch.cuda.is_available() else "cpu"
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+    
     model = Qwen3TTSModel.from_pretrained(
         path,
-        device_map="cuda:0",
-        dtype=torch.bfloat16,
-        attn_implementation="sdpa",
+        device_map=device_map,
+        dtype=dtype,
+        attn_implementation="sdpa" if torch.cuda.is_available() else "eager",
     )
 
     # torch.compile no talker (primeira execução mais lenta, depois ~6x mais rápido)
-    print(f"Compilando talker {size}...")
-    model.model.talker = torch.compile(model.model.talker, mode="reduce-overhead")
+    if torch.cuda.is_available():
+        print(f"Compilando talker {size}...")
+        model.model.talker = torch.compile(model.model.talker, mode="reduce-overhead")
 
     print(f"Modelo {size} pronto!")
     return model
