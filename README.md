@@ -1,4 +1,4 @@
-# Evo Qwen3TTS
+# Evo Qwen3TTS for Windows
 
 Local text-to-speech system with voice cloning, Whisper transcription, FastAPI docs, and a browser UI.
 
