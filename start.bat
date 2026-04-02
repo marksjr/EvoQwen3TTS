@@ -48,6 +48,26 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+set "HAS_06=0"
+set "HAS_17=0"
+if exist "models\0.6B" set "HAS_06=1"
+if exist "models\1.7B" set "HAS_17=1"
+
+if "%HAS_06%"=="0" if "%HAS_17%"=="0" (
+    echo   [ERROR] No model was found in the models folder.
+    echo.
+    echo   Evo Qwen3TTS needs at least one model to generate audio.
+    echo   The easiest fix is to run install.bat and choose a model download option.
+    echo.
+    set /p "OPEN_INSTALL=  Open install.bat now? (Y/N): "
+    if /i "%OPEN_INSTALL%"=="Y" (
+        start "" "%~dp0install.bat"
+    )
+    echo.
+    pause
+    exit /b 1
+)
+
 if exist "%~dp0ffmpeg\ffmpeg.exe" set "PATH=%~dp0ffmpeg;%PATH%"
 
 echo   Starting API on port 5050...

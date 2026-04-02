@@ -137,10 +137,12 @@ start.bat
 What happens on startup:
 
 1. The launcher checks Python and dependencies
-2. The API starts on port `5050`
-3. The browser opens automatically
-4. Missing voice transcriptions continue in background
-5. The UI updates automatically as voices become ready
+2. The launcher checks whether at least one model exists
+3. If no model exists, it explains the issue and offers to open `install.bat`
+4. If a model exists, the API starts on port `5050`
+5. The browser opens automatically
+6. Missing voice transcriptions continue in background
+7. The UI updates automatically as voices become ready
 
 You do not need to refresh the page manually after startup transcription finishes.
 
