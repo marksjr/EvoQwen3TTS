@@ -1,0 +1,21 @@
+.agent/
+.claude/
+.venv/
+venv/
+python/
+ffmpeg/
+output/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local data and generated metadata
+reference_audio/transcriptions.json
+
+# Large local assets and models
+models/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

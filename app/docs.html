@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evo Qwen3TTS Documentation</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", sans-serif; background: #0d1320; color: #fff; }
+    .wrap { width: min(1100px, 92vw); margin: 0 auto; padding: 24px; }
+    .hero, .card { background: #121a28; border: 1px solid #273446; border-radius: 18px; padding: 24px; }
+    .hero { margin-bottom: 18px; background: linear-gradient(135deg, #10233a, #162b47); border-color: #31587e; }
+    .card { margin-bottom: 16px; }
+    h1, h2, h3 { margin: 0 0 12px; }
+    h1, h2 { color: #61dafb; }
+    p, li { line-height: 1.6; }
+    .links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .links a { text-decoration: none; color: #fff; border: 1px solid #35506d; padding: 10px 14px; border-radius: 10px; background: #0f1828; }
+    .links a:hover { color: #61dafb; border-color: #61dafb; }
+    code, pre { font-family: Consolas, monospace; }
+    pre { background: #0b111c; border: 1px solid #223246; border-radius: 12px; padding: 14px; overflow: auto; color: #d9e7f5; }
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .note { border-left: 4px solid #61dafb; padding-left: 12px; }
+    .warn { border-left: 4px solid #ffb366; padding-left: 12px; }
+    .mini { color: #cfe1f4; }
+    ul, ol { padding-left: 22px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Evo Qwen3TTS</h1>
+      <p>Evo Qwen3TTS is a local speech generation system with FastAPI, Whisper transcription, reference voice management, and a browser interface.</p>
+      <div class="links">
+        <a href="/">Open App</a>
+        <a href="/api-docs" target="_blank" rel="noopener noreferrer">API Docs</a>
+        <a href="/api-redoc" target="_blank" rel="noopener noreferrer">ReDoc</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quick Start</h2>
+      <ol>
+        <li>Run <code>install.bat</code> once.</li>
+        <li>Run <code>start.bat</code>.</li>
+        <li>Open <code>http://localhost:5050</code>.</li>
+        <li>Wait for voices to become available if background transcription is still running.</li>
+        <li>Type your text, choose a voice, choose the text language, then click <strong>Generate Audio</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Most Important Concept</h2>
+      <div class="note">
+        <p><strong>Voice</strong> and <strong>Language</strong> are not the same thing.</p>
+        <p><strong>Voice</strong> controls who is speaking, meaning the speaker timbre or cloned voice identity.</p>
+        <p><strong>Language</strong> controls the pronunciation rules for the text you typed.</p>
+      </div>
+      <div class="warn">
+        <p>A Portuguese reference voice with <code>language: "english"</code> is technically allowed, but it can confuse users. Prefer matching the text language to the actual text whenever possible.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recommended Request Examples</h2>
+      <h3>Portuguese text with a Portuguese voice</h3>
+      <pre><code>{
+  "text": "Ola, esta e uma demonstracao do Evo Qwen3TTS.",
+  "model": "1.7B",
+  "voice": "Portuguese_Brazilian_Female_Speaker_01",
+  "language": "portuguese",
+  "emotion": "neutral"
+}</code></pre>
+      <h3>English text with an English voice</h3>
+      <pre><code>{
+  "text": "Hello, this is an English demo for Evo Qwen3TTS.",
+  "model": "1.7B",
+  "voice": "English_Female_Speaker_01",
+  "language": "english",
+  "emotion": "confident"
+}</code></pre>
+      <h3>Advanced case: English text with a Portuguese voice timbre</h3>
+      <pre><code>{
+  "text": "Hello, this is an English sentence spoken with a Brazilian reference voice.",
+  "model": "1.7B",
+  "voice": "Portuguese_Brazilian_Female_Speaker_01",
+  "language": "english",
+  "emotion": "neutral"
+}</code></pre>
+      <p class="mini">Use the advanced case only when you intentionally want that speaker timbre while keeping English pronunciation rules.</p>
+    </div>
+
+    <div class="card">
+      <h2>How To Use The Interface</h2>
+      <div class="grid">
+        <div>
+          <h3>Text to Synthesize</h3>
+          <p>Type the content you want the model to speak.</p>
+        </div>
+        <div>
+          <h3>Emotion / Speaking Style</h3>
+          <p>Select a style like neutral, happy, sad, dramatic, whisper, news or storytelling.</p>
+        </div>
+        <div>
+          <h3>Reference Voice</h3>
+          <p>Select the speaker identity. This is the cloned voice source.</p>
+        </div>
+        <div>
+          <h3>Text Language</h3>
+          <p>Select the language of the typed text so the system pronounces it correctly.</p>
+        </div>
+        <div>
+          <h3>Model</h3>
+          <p><code>0.6B</code> is faster. <code>1.7B</code> usually gives better quality.</p>
+        </div>
+        <div>
+          <h3>Generate Audio</h3>
+          <p>Creates a `.wav` file and shows the player plus timing statistics.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Voice Library</h2>
+      <ul>
+        <li><strong>Add Voice</strong>: upload a new `.wav` file and let Whisper transcribe it automatically.</li>
+        <li><strong>Delete</strong>: only custom voices can be removed. Protected system voices cannot be deleted.</li>
+        <li><strong>Filters</strong>: narrow the list by region and gender.</li>
+        <li><strong>Startup status</strong>: the interface updates automatically while voices are still being transcribed in background.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>API Endpoints</h2>
+      <ul>
+        <li><code>GET /</code>: open the main app.</li>
+        <li><code>GET /docs.html</code>: open this HTML documentation page.</li>
+        <li><code>GET /api-docs</code>: interactive Swagger documentation.</li>
+        <li><code>GET /api-redoc</code>: ReDoc reference.</li>
+        <li><code>GET /voices</code>: list available voices.</li>
+        <li><code>GET /system-status</code>: startup progress and transcription status.</li>
+        <li><code>POST /generate</code>: generate speech from text.</li>
+        <li><code>POST /upload-voice</code>: upload a custom voice file.</li>
+        <li><code>DELETE /voices/{name}</code>: delete a custom voice by name.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Project Layout</h2>
+      <p>The root folder is kept cleaner now.</p>
+      <ul>
+        <li><code>start.bat</code>: launch the system</li>
+        <li><code>install.bat</code>: install dependencies</li>
+        <li><code>app\</code>: API, UI, HTML documentation, README and helper files</li>
+        <li><code>models\</code>: model folders</li>
+        <li><code>reference_audio\</code>: voice files</li>
+        <li><code>output\</code>: generated audio</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

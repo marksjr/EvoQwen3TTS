@@ -1,0 +1,191 @@
+@echo off
+chcp 65001 >nul 2>&1
+title Evo Qwen3TTS Installer
+color 0B
+
+cd /d "%~dp0"
+
+echo.
+echo ================================================
+echo   Evo Qwen3TTS Portable Installer
+echo ================================================
+echo.
+
+echo [0/6] Checking project files...
+if not exist "app\api.py" (
+    echo   [ERROR] Missing app\api.py
+    goto :error_exit
+)
+if not exist "app\index.html" (
+    echo   [ERROR] Missing app\index.html
+    goto :error_exit
+)
+if not exist "app\requirements.txt" (
+    echo   [ERROR] Missing app\requirements.txt
+    goto :error_exit
+)
+echo   [OK] Required app files found
+
+echo.
+echo [1/6] Checking Python...
+set "PYTHON_CMD="
+set "PIP_CMD="
+set "PORTABLE_PYTHON=%~dp0python\python.exe"
+
+if exist "%PORTABLE_PYTHON%" (
+    echo   [OK] Portable Python found in python\
+    set "PYTHON_CMD=%PORTABLE_PYTHON%"
+    set "PIP_CMD=%PORTABLE_PYTHON% -m pip"
+    goto :python_ok
+)
+
+if exist "venv\Scripts\python.exe" (
+    echo   [OK] Existing virtual environment found
+    set "PYTHON_CMD=%~dp0venv\Scripts\python.exe"
+    set "PIP_CMD=%~dp0venv\Scripts\python.exe -m pip"
+    goto :python_ok
+)
+
+where python >nul 2>&1
+if %errorlevel% equ 0 (
+    for /f "tokens=*" %%i in ('python --version 2^>^&1') do set "PY_VER=%%i"
+    echo   [OK] System Python found: %PY_VER%
+    set "PYTHON_CMD=python"
+    set "PIP_CMD=python -m pip"
+    goto :create_venv
+)
+
+echo   [INFO] Python not found. Installing portable Python 3.11...
+if not exist "python" mkdir python
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ^
+    $url = 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip'; ^
+    $out = '%~dp0python\python-embed.zip'; ^
+    (New-Object Net.WebClient).DownloadFile($url, $out); ^
+    Expand-Archive -Path $out -DestinationPath '%~dp0python' -Force; ^
+    Remove-Item $out -Force"
+
+if not exist "%PORTABLE_PYTHON%" (
+    echo   [ERROR] Failed to install portable Python.
+    goto :error_exit
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$pth = Get-ChildItem '%~dp0python\python*._pth' | Select-Object -First 1; ^
+    if ($pth) { ^
+        $content = Get-Content $pth.FullName; ^
+        $content = $content -replace '^#import site', 'import site'; ^
+        Set-Content $pth.FullName $content ^
+    }"
+
+echo   Installing pip...
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ^
+    (New-Object Net.WebClient).DownloadFile('https://bootstrap.pypa.io/get-pip.py', '%~dp0python\get-pip.py')"
+
+"%PORTABLE_PYTHON%" "%~dp0python\get-pip.py" --no-warn-script-location >nul 2>&1
+if %errorlevel% neq 0 (
+    echo   [ERROR] Failed to install pip.
+    goto :error_exit
+)
+
+set "PYTHON_CMD=%PORTABLE_PYTHON%"
+set "PIP_CMD=%PORTABLE_PYTHON% -m pip"
+echo   [OK] Portable Python installed
+goto :python_ok
+
+:create_venv
+if not exist "venv\Scripts\python.exe" (
+    echo   Creating virtual environment...
+    %PYTHON_CMD% -m venv venv
+    if %errorlevel% neq 0 (
+        echo   [ERROR] Failed to create the virtual environment.
+        goto :error_exit
+    )
+)
+set "PYTHON_CMD=%~dp0venv\Scripts\python.exe"
+set "PIP_CMD=%~dp0venv\Scripts\python.exe -m pip"
+
+:python_ok
+echo.
+echo [2/6] Checking NVIDIA GPU / CUDA...
+where nvidia-smi >nul 2>&1
+if %errorlevel% equ 0 (
+    for /f "tokens=*" %%i in ('nvidia-smi --query-gpu=name --format=csv,noheader 2^>nul') do echo   [OK] GPU found: %%i
+) else (
+    echo   [WARNING] nvidia-smi was not found.
+    echo   This project requires an NVIDIA GPU with CUDA support.
+    set /p "CONTINUE_ANYWAY=  Continue anyway? (Y/N): "
+    if /i not "%CONTINUE_ANYWAY%"=="Y" goto :error_exit
+)
+
+echo.
+echo [3/6] Checking ffmpeg...
+where ffmpeg >nul 2>&1
+if %errorlevel% equ 0 (
+    echo   [OK] ffmpeg found
+) else (
+    if exist "%~dp0ffmpeg\ffmpeg.exe" (
+        echo   [OK] Portable ffmpeg found in ffmpeg\
+        set "PATH=%~dp0ffmpeg;%PATH%"
+    ) else (
+        echo   Installing ffmpeg helper package...
+        %PIP_CMD% install imageio-ffmpeg --no-warn-script-location -q
+        if %errorlevel% neq 0 (
+            echo   [ERROR] Failed to install ffmpeg helper package.
+            goto :error_exit
+        )
+        echo   [OK] ffmpeg helper installed
+    )
+)
+
+echo.
+echo [4/6] Checking PyTorch with CUDA...
+%PYTHON_CMD% -c "import torch; print(torch.cuda.is_available())" 2>nul | findstr "True" >nul 2>&1
+if %errorlevel% equ 0 (
+    for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v with CUDA is already installed
+) else (
+    echo   Installing PyTorch with CUDA 12.6...
+    %PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cu126 --no-warn-script-location -q
+    if %errorlevel% neq 0 (
+        echo   [ERROR] Failed to install PyTorch.
+        goto :error_exit
+    )
+    echo   [OK] PyTorch installed
+)
+
+echo.
+echo [5/6] Installing project dependencies...
+%PYTHON_CMD% -c "import fastapi; import qwen_tts; import whisper; import soundfile" 2>nul
+if %errorlevel% equ 0 (
+    echo   [OK] Dependencies are already installed
+) else (
+    %PIP_CMD% install -r app\requirements.txt --no-warn-script-location -q
+    if %errorlevel% neq 0 (
+        echo   [ERROR] Failed to install project dependencies.
+        goto :error_exit
+    )
+    echo   [OK] Dependencies installed
+)
+
+echo.
+echo [6/6] Checking local models...
+if exist "models\0.6B" (echo   [OK] Model 0.6B found) else (echo   [WARNING] Model 0.6B not found in models\0.6B)
+if exist "models\1.7B" (echo   [OK] Model 1.7B found) else (echo   [WARNING] Model 1.7B not found in models\1.7B)
+
+echo.
+echo ================================================
+echo   Installation completed successfully
+echo   Run start.bat to launch the system
+echo ================================================
+echo.
+pause
+exit /b 0
+
+:error_exit
+echo.
+echo [ERROR] Installation stopped. Fix the issues above and try again.
+echo.
+pause
+exit /b 1

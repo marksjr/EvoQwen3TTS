@@ -1,0 +1,11 @@
+# Evo Qwen3TTS dependencies
+# PyTorch with CUDA is installed separately by install.bat
+fastapi
+uvicorn[standard]
+soundfile
+numpy
+openai-whisper
+qwen-tts
+transformers
+accelerate
+pydantic

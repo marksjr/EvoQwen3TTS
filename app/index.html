@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evo Qwen3TTS Voice Generator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; font-family: "Segoe UI", sans-serif; background: #0d1320; color: #ffffff; }
+    .wrap { width: 90%; max-width: 1800px; margin: 0 auto; }
+    .top { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .links { display: flex; gap: 10px; flex-wrap: wrap; }
+    .links a, .btn { border: 1px solid #35506d; background: #121c2c; color: #eef3fb; border-radius: 10px; padding: 10px 14px; text-decoration: none; cursor: pointer; }
+    .links a:hover, .btn:hover { border-color: #61dafb; color: #61dafb; }
+    .panel { background: #121a28; border: 1px solid #273446; border-radius: 16px; padding: 20px; }
+    label { display: block; margin: 0 0 8px; color: #ffffff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    textarea, select { width: 100%; padding: 12px 14px; border: 1px solid #314156; border-radius: 12px; background: #0d1523; color: #ffffff; }
+    textarea { min-height: 150px; resize: vertical; }
+    .muted { color: #ffffff; font-size: 13px; }
+    .grid { display: grid; gap: 16px; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .emotions { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+    .emotion { border: 1px solid #314156; background: #0d1523; color: #ffffff; border-radius: 10px; padding: 10px; cursor: pointer; }
+    .emotion.selected { border-color: #61dafb; color: #61dafb; }
+    .voicebox { border: 1px solid #273446; border-radius: 14px; padding: 16px; background: #0f1725; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .primary { width: 100%; background: linear-gradient(135deg, #61dafb, #1f8bff); color: #09111d; font-weight: 700; }
+    .danger { border-color: #a75264; color: #ff9aad; }
+    .status, .error, .result { display: none; margin-top: 16px; }
+    .status { color: #ffffff; }
+    .startup { display: none; color: #ffffff; background: #102133; border: 1px solid #2d4f72; padding: 12px; border-radius: 12px; }
+    .startup strong { color: #61dafb; }
+    .error { color: #ffffff; background: #4b1f2d; border: 1px solid #823447; padding: 12px; border-radius: 12px; }
+    .result { background: #0d1523; border: 1px solid #273446; padding: 16px; border-radius: 12px; color: #ffffff; }
+    .result.show { display: block; }
+    .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .stat { background: #111a2a; border: 1px solid #253245; border-radius: 10px; padding: 8px 12px; font-size: 14px; color: #ffffff; }
+    .stat span { color: #61dafb; font-weight: 700; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .72); padding: 20px; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-card { width: min(520px, 100%); background: #111a28; border: 1px solid #273446; border-radius: 16px; padding: 20px; }
+    .drop { margin-top: 16px; border: 2px dashed #3b4e68; border-radius: 14px; padding: 32px 16px; text-align: center; color: #ffffff; cursor: pointer; }
+    .drop.dragover { border-color: #61dafb; color: #61dafb; }
+    .drop.has-file { border-color: #58c488; color: #58c488; }
+    @media (max-width: 640px) { body { padding: 14px; } .panel { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Evo Qwen3TTS</h1>
+        <div class="muted">Local text-to-speech, voice cloning, and voice library management.</div>
+      </div>
+      <div class="links">
+        <a href="/docs.html" target="_blank" rel="noopener noreferrer">System Docs</a>
+        <a href="/api-docs" target="_blank" rel="noopener noreferrer">API Docs</a>
+        <a href="/api-redoc" target="_blank" rel="noopener noreferrer">ReDoc</a>
+      </div>
+    </div>
+
+    <div class="panel grid">
+      <div>
+        <label for="text">Text to synthesize</label>
+        <textarea id="text" placeholder="Type the text that should be converted into speech..."></textarea>
+        <div class="muted" style="text-align:right; margin-top:6px;"><span id="charCount">0</span> characters</div>
+      </div>
+
+      <div>
+        <label>Emotion / speaking style</label>
+        <div class="emotions" id="emotionGrid"></div>
+      </div>
+
+      <div class="startup" id="startupStatus"></div>
+
+      <div class="voicebox">
+        <label for="voice">Reference voice</label>
+        <div class="row">
+          <select id="countryFilter"><option value="">All languages</option></select>
+          <select id="genderFilter">
+            <option value="">All genders</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+          </select>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <select id="voice"><option value="">Loading voices...</option></select>
+          <div class="actions">
+            <button type="button" class="btn" onclick="openUploadModal()">Add Voice</button>
+            <button type="button" class="btn danger" id="btnDeleteVoice" onclick="deleteVoice()">Delete</button>
+          </div>
+        </div>
+        <div class="muted" id="voiceInfo" style="margin-top:10px; white-space:pre-line;"></div>
+        <div class="muted" id="voiceCount" style="margin-top:6px;"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="language">Text language</label>
+          <select id="language">
+            <option value="portuguese">Portuguese</option>
+            <option value="english">English</option>
+            <option value="spanish">Spanish</option>
+            <option value="french">French</option>
+            <option value="german">German</option>
+            <option value="italian">Italian</option>
+            <option value="japanese">Japanese</option>
+            <option value="chinese">Chinese</option>
+            <option value="korean">Korean</option>
+            <option value="russian">Russian</option>
+            <option value="auto">Auto detect</option>
+          </select>
+        </div>
+        <div>
+          <label for="model">Model</label>
+          <select id="model">
+            <option value="0.6B">0.6B (Faster)</option>
+            <option value="1.7B" selected>1.7B (Higher quality)</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn primary" id="btnGenerate" onclick="generate()">Generate Audio</button>
+      <div class="status" id="loading">Generating audio... <span id="timer">0.0s</span></div>
+      <div class="error" id="error"></div>
+      <div class="result" id="result">
+        <audio id="audioPlayer" controls style="width:100%;"></audio>
+        <div class="stats" id="stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="uploadModal">
+    <div class="modal-card">
+      <h2>Add Reference Voice</h2>
+      <p class="muted">Upload a `.wav` file with 5 to 15 seconds of clean speech. The audio will be transcribed automatically.</p>
+      <div class="drop" id="dropZone" onclick="document.getElementById('fileInput').click()">Click here or drop a `.wav` file</div>
+      <input type="file" id="fileInput" accept=".wav" style="display:none;">
+      <div class="muted" id="uploadStatus" style="margin-top:12px; display:none;"></div>
+      <div class="actions" style="margin-top:16px;">
+        <button class="btn" onclick="closeUploadModal()">Cancel</button>
+        <button class="btn primary" id="btnUpload" onclick="uploadVoice()" disabled style="width:auto;">Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const emotions = [
+      ["neutral", "Neutral"], ["happy", "Happy"], ["sad", "Sad"], ["angry", "Angry"], ["fearful", "Fearful"],
+      ["surprised", "Surprised"], ["disgusted", "Disgusted"], ["excited", "Excited"], ["tender", "Tender"],
+      ["sarcastic", "Sarcastic"], ["whisper", "Whisper"], ["dramatic", "Dramatic"], ["calm", "Calm"],
+      ["anxious", "Anxious"], ["confident", "Confident"], ["melancholic", "Melancholic"], ["hopeful", "Hopeful"],
+      ["seductive", "Seductive"], ["storytelling", "Storytelling"], ["news", "News"]
+    ];
+    const langLabels = { Arabic: "Arabic", Danish: "Danish", Dutch: "Dutch", English: "English", French: "French", German: "German", Japanese: "Japanese", Norwegian: "Norwegian", Portuguese: "Portuguese", Portuguese_Brazilian: "Brazilian Portuguese", Spanish: "Spanish", Swedish: "Swedish" };
+    const countryLabels = { Arabic: "Arabic", Danish: "Danish", Dutch: "Dutch", English: "English", French: "French", German: "German", Japanese: "Japanese", Norwegian: "Norwegian", Portuguese: "Portuguese", Portuguese_Brazilian: "Brazilian Portuguese", Spanish: "Spanish", Swedish: "Swedish" };
+    const genderLabels = { Male: "Male", Female: "Female", Unknown: "" };
+
+    let voices = [];
+    let selectedFile = null;
+    let selectedEmotion = "neutral";
+    let startupPoll = null;
+
+    function initEmotionGrid() {
+      const grid = document.getElementById("emotionGrid");
+      emotions.forEach(([value, label], idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "emotion" + (idx === 0 ? " selected" : "");
+        btn.dataset.emotion = value;
+        btn.textContent = label;
+        btn.onclick = () => {
+          document.querySelectorAll(".emotion").forEach(el => el.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedEmotion = value;
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    function parseVoiceName(rawName) {
+      const genders = ["Male", "Female", "Unknown"];
+      const parts = rawName.split("_");
+      let lang = "", gender = "", genderIdx = -1;
+      for (let i = 0; i < parts.length; i++) if (genders.includes(parts[i])) { genderIdx = i; gender = parts[i]; break; }
+      if (genderIdx > 0) lang = parts.slice(0, genderIdx).join("_");
+      const langLabel = lang ? (langLabels[lang] || lang.replace(/_/g, " ")) : "Custom";
+      const isProtected = !!lang;
+      return {
+        raw: rawName,
+        lang,
+        langLabel,
+        countryLabel: lang ? (countryLabels[lang] || lang.replace(/_/g, " ")) : "Custom voices",
+        gender,
+        genderLabel: genderLabels[gender] || gender,
+        displayName: rawName.replace(/_/g, " "),
+        isProtected
+      };
+    }
+
+    function setStartupMessage(status, isError = false) {
+      const box = document.getElementById("startupStatus");
+      if (!status) {
+        box.style.display = "none";
+        box.textContent = "";
+        return;
+      }
+      box.style.display = "block";
+      box.style.borderColor = isError ? "#823447" : "#2d4f72";
+      box.style.background = isError ? "#4b1f2d" : "#102133";
+      box.innerHTML = status;
+    }
+
+    async function pollSystemStatus() {
+      try {
+        const res = await fetch("/system-status");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to load system status.");
+
+        if (data.phase === "error") {
+          setStartupMessage(`<strong>Startup error:</strong> ${data.last_error || "Unknown error"}`, true);
+          if (startupPoll) clearInterval(startupPoll);
+          startupPoll = null;
+          return;
+        }
+
+        if (data.is_transcribing || data.pending_voices > 0) {
+          const current = data.current_voice ? ` Current file: <code>${data.current_voice}</code>.` : "";
+          setStartupMessage(
+            `<strong>Preparing voices:</strong> ${data.ready_voices}/${data.available_voices} ready.` +
+            ` ${data.pending_voices} still processing.${current}`
+          );
+        } else {
+          setStartupMessage(`<strong>System ready:</strong> ${data.ready_voices} voice(s) available.`);
+          if (startupPoll) {
+            clearInterval(startupPoll);
+            startupPoll = null;
+          }
+        }
+
+        await loadVoices();
+      } catch (e) {
+        setStartupMessage(`<strong>Connecting to API:</strong> ${e.message}`, true);
+      }
+    }
+
+    async function loadVoices() {
+      try {
+        const res = await fetch("/voices");
+        const data = await res.json();
+        voices = data.voices.map(v => ({ ...v, parsed: parseVoiceName(v.name) }));
+        buildCountryFilter();
+        renderVoiceSelect();
+      } catch (e) {
+        console.error("Failed to load voices:", e);
+      }
+    }
+
+    function buildCountryFilter() {
+      const sel = document.getElementById("countryFilter");
+      const current = sel.value;
+      const countries = new Map();
+      const readyVoices = voices.filter(v => v.transcription);
+      readyVoices.forEach(v => {
+        const key = v.parsed.lang || "_custom";
+        const label = v.parsed.lang ? v.parsed.countryLabel : "Custom voices";
+        if (!countries.has(key)) countries.set(key, label);
+      });
+      sel.innerHTML = `<option value="">All languages (${readyVoices.length})</option>`;
+      [...countries.entries()].sort((a, b) => a[1].localeCompare(b[1])).forEach(([key, label]) => {
+        const count = readyVoices.filter(v => (v.parsed.lang || "_custom") === key).length;
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = `${label} (${count})`;
+        sel.appendChild(opt);
+      });
+      if (current) sel.value = current;
+    }
+
+    function getFilteredVoices() {
+      const country = document.getElementById("countryFilter").value;
+      const gender = document.getElementById("genderFilter").value;
+      return voices.filter(v =>
+        v.transcription &&
+        (!country || (v.parsed.lang || "_custom") === country) &&
+        (!gender || v.parsed.gender === gender)
+      );
+    }
+
+    function renderVoiceSelect() {
+      const sel = document.getElementById("voice");
+      const current = sel.value;
+      const filtered = getFilteredVoices();
+      sel.innerHTML = "";
+      if (!filtered.length) {
+        sel.innerHTML = '<option value="">No voices found</option>';
+        document.getElementById("voiceInfo").textContent = "";
+        document.getElementById("voiceCount").textContent = "";
+        return;
+      }
+      filtered.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.name;
+        opt.textContent = `${v.parsed.displayName} - ${v.duration}s`;
+        sel.appendChild(opt);
+      });
+      sel.value = filtered.some(v => v.name === current) ? current : filtered[0].name;
+      document.getElementById("voiceCount").textContent = `${filtered.length} voice(s) available`;
+      updateVoiceInfo();
+    }
+
+    function updateVoiceInfo() {
+      const voice = voices.find(v => v.name === document.getElementById("voice").value);
+      const info = document.getElementById("voiceInfo");
+      const deleteBtn = document.getElementById("btnDeleteVoice");
+      if (!voice) {
+        info.textContent = "";
+        deleteBtn.disabled = true;
+        deleteBtn.style.opacity = "0.5";
+        deleteBtn.style.cursor = "not-allowed";
+        return;
+      }
+      let text = `Region: ${voice.parsed.countryLabel} | Language: ${voice.parsed.langLabel || "Custom"} | Duration: ${voice.duration}s`;
+      if (voice.parsed.genderLabel) text += ` | Gender: ${voice.parsed.genderLabel}`;
+      if (voice.transcription) text += `\nTranscription: "${voice.transcription.slice(0, 120)}${voice.transcription.length > 120 ? "..." : ""}"`;
+      text += voice.parsed.isProtected
+        ? `\nDelete: protected system voice`
+        : `\nDelete: custom voice can be removed`;
+      deleteBtn.disabled = voice.parsed.isProtected;
+      deleteBtn.style.opacity = voice.parsed.isProtected ? "0.5" : "1";
+      deleteBtn.style.cursor = voice.parsed.isProtected ? "not-allowed" : "pointer";
+      info.textContent = text;
+    }
+
+    document.getElementById("countryFilter").addEventListener("change", renderVoiceSelect);
+    document.getElementById("genderFilter").addEventListener("change", renderVoiceSelect);
+    document.getElementById("voice").addEventListener("change", updateVoiceInfo);
+    document.getElementById("text").addEventListener("input", e => document.getElementById("charCount").textContent = e.target.value.length);
+
+    function openUploadModal() {
+      selectedFile = null;
+      document.getElementById("fileInput").value = "";
+      document.getElementById("dropZone").textContent = "Click here or drop a `.wav` file";
+      document.getElementById("dropZone").className = "drop";
+      document.getElementById("btnUpload").disabled = true;
+      document.getElementById("uploadStatus").style.display = "none";
+      document.getElementById("uploadModal").classList.add("show");
+    }
+    function closeUploadModal() { document.getElementById("uploadModal").classList.remove("show"); }
+    function selectFile(file) {
+      selectedFile = file;
+      document.getElementById("dropZone").textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+      document.getElementById("dropZone").classList.add("has-file");
+      document.getElementById("btnUpload").disabled = false;
+    }
+
+    const dropZone = document.getElementById("dropZone");
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.toLowerCase().endsWith(".wav")) selectFile(file); else alert("Only `.wav` files are accepted.");
+    });
+    document.getElementById("fileInput").addEventListener("change", e => { if (e.target.files[0]) selectFile(e.target.files[0]); });
+
+    async function uploadVoice() {
+      if (!selectedFile) return;
+      const btn = document.getElementById("btnUpload");
+      const status = document.getElementById("uploadStatus");
+      btn.disabled = true;
+      btn.textContent = "Uploading...";
+      status.style.display = "block";
+      status.style.color = "#61dafb";
+      status.textContent = "Uploading and transcribing audio. This may take a few seconds...";
+      try {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        const res = await fetch("/upload-voice", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Upload failed.");
+        status.style.color = "#58c488";
+        status.textContent = `Voice "${data.name}" added successfully.`;
+        await loadVoices();
+        document.getElementById("voice").value = data.name;
+        updateVoiceInfo();
+        setTimeout(closeUploadModal, 1200);
+      } catch (e) {
+        status.style.color = "#ff9aad";
+        status.textContent = `Error: ${e.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Upload";
+      }
+    }
+
+    async function deleteVoice() {
+      const name = document.getElementById("voice").value;
+      if (!name) return;
+      const voice = voices.find(v => v.name === name);
+      if (voice?.parsed?.isProtected) {
+        alert("System voices are protected and cannot be deleted.");
+        return;
+      }
+      const label = voice ? voice.parsed.displayName : name;
+      if (!confirm(`Delete the voice "${label}"?\nThis action cannot be undone.`)) return;
+      try {
+        const res = await fetch(`/voices/${encodeURIComponent(name)}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Delete failed.");
+        await loadVoices();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    }
+
+    async function generate() {
+      const text = document.getElementById("text").value.trim();
+      const voice = document.getElementById("voice").value;
+      if (!text) return alert("Enter some text first.");
+      if (!voice) return alert("Select a reference voice.");
+      const btn = document.getElementById("btnGenerate");
+      const loading = document.getElementById("loading");
+      const error = document.getElementById("error");
+      const result = document.getElementById("result");
+      btn.disabled = true;
+      loading.style.display = "block";
+      error.style.display = "none";
+      result.classList.remove("show");
+      const start = Date.now();
+      const timer = setInterval(() => document.getElementById("timer").textContent = `${((Date.now() - start) / 1000).toFixed(1)}s`, 100);
+      try {
+        let res;
+        try {
+          res = await fetch("/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, model: document.getElementById("model").value, voice, language: document.getElementById("language").value, emotion: selectedEmotion })
+          });
+        } catch (_) {
+          throw new Error("API is offline. Start the server with start.bat.");
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Audio generation failed.");
+        const voiceObj = voices.find(v => v.name === data.voice);
+        const voiceLabel = voiceObj ? voiceObj.parsed.displayName : data.voice;
+        document.getElementById("audioPlayer").src = data.url;
+        document.getElementById("stats").innerHTML =
+          `<div class="stat">Duration: <span>${data.duration}s</span></div>` +
+          `<div class="stat">Generation: <span>${data.generation_time}s</span></div>` +
+          `<div class="stat">Characters: <span>${data.characters}</span></div>` +
+          `<div class="stat">Chunks: <span>${data.chunks || 1}</span></div>` +
+          `<div class="stat">Model: <span>${data.model}</span></div>` +
+          `<div class="stat">Voice: <span>${voiceLabel}</span></div>` +
+          (data.emotion && data.emotion !== "neutral" ? `<div class="stat">Emotion: <span>${data.emotion}</span></div>` : "");
+        result.classList.add("show");
+      } catch (e) {
+        error.textContent = e.message;
+        error.style.display = "block";
+      } finally {
+        clearInterval(timer);
+        btn.disabled = false;
+        loading.style.display = "none";
+      }
+    }
+
+    initEmotionGrid();
+    pollSystemStatus();
+    startupPoll = setInterval(pollSystemStatus, 3000);
+  </script>
+</body>
+</html>
