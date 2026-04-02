@@ -13,6 +13,7 @@
     .links a, .btn { border: 1px solid #35506d; background: #121c2c; color: #eef3fb; border-radius: 10px; padding: 10px 14px; text-decoration: none; cursor: pointer; }
     .links a:hover, .btn:hover { border-color: #61dafb; color: #61dafb; }
     .panel { background: #121a28; border: 1px solid #273446; border-radius: 16px; padding: 20px; }
+    .simple-links { display: flex; gap: 10px; flex-wrap: wrap; }
     label { display: block; margin: 0 0 8px; color: #ffffff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
     textarea, select { width: 100%; padding: 12px 14px; border: 1px solid #314156; border-radius: 12px; background: #0d1523; color: #ffffff; }
     textarea { min-height: 150px; resize: vertical; }
@@ -43,6 +44,12 @@
     .drop { margin-top: 16px; border: 2px dashed #3b4e68; border-radius: 14px; padding: 32px 16px; text-align: center; color: #ffffff; cursor: pointer; }
     .drop.dragover { border-color: #61dafb; color: #61dafb; }
     .drop.has-file { border-color: #58c488; color: #58c488; }
+    .advanced { border: 1px solid #273446; border-radius: 14px; padding: 16px; background: #0f1725; }
+    .advanced summary { cursor: pointer; font-weight: 700; color: #ffffff; }
+    .advanced summary::-webkit-details-marker { display: none; }
+    .advanced summary::after { content: "Show"; float: right; color: #61dafb; font-weight: 400; }
+    .advanced[open] summary::after { content: "Hide"; }
+    .advanced-body { margin-top: 14px; }
     @media (max-width: 640px) { body { padding: 14px; } .panel { padding: 16px; } }
   </style>
 </head>
@@ -53,11 +60,9 @@
         <h1>Evo Qwen3TTS</h1>
         <div class="muted">Local text-to-speech, voice cloning, and voice library management.</div>
       </div>
-      <div class="links">
+      <div class="simple-links">
         <a href="/docs.html#quick-start" target="_blank" rel="noopener noreferrer">Quick Start</a>
-        <a href="/docs.html" target="_blank" rel="noopener noreferrer">System Docs</a>
-        <a href="/api-docs" target="_blank" rel="noopener noreferrer">API Docs</a>
-        <a href="/api-redoc" target="_blank" rel="noopener noreferrer">ReDoc</a>
+        <a href="/docs.html" target="_blank" rel="noopener noreferrer">Help</a>
       </div>
     </div>
 
@@ -79,7 +84,7 @@
 
       <div class="voicebox">
         <label for="voice">Choose the voice</label>
-        <div class="hint">This selects who is speaking. It changes the speaker timbre, not the language of your text.</div>
+        <div class="hint">This selects who is speaking. For most users, just pick a voice you like and click Generate Audio.</div>
         <div class="row">
           <select id="countryFilter"><option value="">All languages</option></select>
           <select id="genderFilter">
@@ -99,33 +104,43 @@
         <div class="muted" id="voiceCount" style="margin-top:6px;"></div>
       </div>
 
-        <div class="row">
-          <div>
-          <label for="language">Language of your text</label>
-          <select id="language">
-            <option value="portuguese">Portuguese</option>
-            <option value="english">English</option>
-            <option value="spanish">Spanish</option>
-            <option value="french">French</option>
-            <option value="german">German</option>
-            <option value="italian">Italian</option>
-            <option value="japanese">Japanese</option>
-            <option value="chinese">Chinese</option>
-            <option value="korean">Korean</option>
-            <option value="russian">Russian</option>
-            <option value="auto">Auto detect</option>
-          </select>
-          <div class="hint">Choose the language of what you typed above so the pronunciation sounds correct.</div>
+      <details class="advanced">
+        <summary>Advanced Options</summary>
+        <div class="advanced-body">
+          <div class="hint">Most users can leave these options as they are. Open this only if you want to change language or quality.</div>
+          <div class="row">
+            <div>
+              <label for="language">Language of your text</label>
+              <select id="language">
+                <option value="portuguese">Portuguese</option>
+                <option value="english">English</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+                <option value="italian">Italian</option>
+                <option value="japanese">Japanese</option>
+                <option value="chinese">Chinese</option>
+                <option value="korean">Korean</option>
+                <option value="russian">Russian</option>
+                <option value="auto">Auto detect</option>
+              </select>
+              <div class="hint">Change this if the typed text is not in Portuguese.</div>
+            </div>
+            <div>
+              <label for="model">Quality and speed</label>
+              <select id="model">
+                <option value="0.6B">0.6B (Faster)</option>
+                <option value="1.7B" selected>1.7B (Higher quality)</option>
+              </select>
+              <div class="hint">Use 0.6B on weaker GPUs. Use 1.7B for better quality.</div>
+            </div>
+          </div>
+          <div class="links" style="margin-top:14px;">
+            <a href="/api-docs" target="_blank" rel="noopener noreferrer">API Docs</a>
+            <a href="/api-redoc" target="_blank" rel="noopener noreferrer">ReDoc</a>
+          </div>
         </div>
-        <div>
-          <label for="model">Quality and speed</label>
-          <select id="model">
-            <option value="0.6B">0.6B (Faster)</option>
-            <option value="1.7B" selected>1.7B (Higher quality)</option>
-          </select>
-          <div class="hint">Use 0.6B for faster generation. Use 1.7B for better quality if your GPU can handle it.</div>
-        </div>
-      </div>
+      </details>
 
       <button class="btn primary" id="btnGenerate" onclick="generate()">Generate Audio</button>
       <div class="status" id="loading">Generating audio... <span id="timer">0.0s</span></div>
