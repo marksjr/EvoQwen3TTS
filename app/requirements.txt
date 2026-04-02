@@ -9,3 +9,4 @@ qwen-tts
 transformers
 accelerate
 pydantic
+huggingface_hub

@@ -24,6 +24,10 @@ if not exist "app\requirements.txt" (
     echo   [ERROR] Missing app\requirements.txt
     goto :error_exit
 )
+if not exist "app\download_models.py" (
+    echo   [ERROR] Missing app\download_models.py
+    goto :error_exit
+)
 echo   [OK] Required app files found
 
 echo.
@@ -171,12 +175,77 @@ if %errorlevel% equ 0 (
 
 echo.
 echo [6/6] Checking local models...
-if exist "models\0.6B" (echo   [OK] Model 0.6B found) else (echo   [WARNING] Model 0.6B not found in models\0.6B)
-if exist "models\1.7B" (echo   [OK] Model 1.7B found) else (echo   [WARNING] Model 1.7B not found in models\1.7B)
+set "HAS_06=0"
+set "HAS_17=0"
+if exist "models\0.6B" (
+    echo   [OK] Model 0.6B found
+    set "HAS_06=1"
+) else (
+    echo   [WARNING] Model 0.6B not found in models\0.6B
+)
+if exist "models\1.7B" (
+    echo   [OK] Model 1.7B found
+    set "HAS_17=1"
+) else (
+    echo   [WARNING] Model 1.7B not found in models\1.7B
+)
+
+if "%HAS_06%"=="1" if "%HAS_17%"=="1" goto :install_done
+
+echo.
+echo   Evo Qwen3TTS still needs at least one model to generate audio.
+echo   Choose what you want to do:
+echo     [1] Download 0.6B now   - faster and lighter (recommended)
+echo     [2] Download 1.7B now   - higher quality, heavier
+echo     [3] Download both models
+echo     [4] Skip for now
+set /p "MODEL_CHOICE=  Select an option [1-4] (default: 1): "
+if "%MODEL_CHOICE%"=="" set "MODEL_CHOICE=1"
+
+if "%MODEL_CHOICE%"=="1" goto :download_model_06
+if "%MODEL_CHOICE%"=="2" goto :download_model_17
+if "%MODEL_CHOICE%"=="3" goto :download_model_all
+if "%MODEL_CHOICE%"=="4" goto :install_done
+
+echo   [WARNING] Invalid option. Skipping model download.
+goto :install_done
+
+:download_model_06
+echo.
+echo   Downloading model 0.6B...
+%PYTHON_CMD% app\download_models.py --model 0.6B --models-dir "%~dp0models"
+if %errorlevel% neq 0 (
+    echo   [ERROR] Failed to download model 0.6B.
+    goto :error_exit
+)
+goto :install_done
+
+:download_model_17
+echo.
+echo   Downloading model 1.7B...
+%PYTHON_CMD% app\download_models.py --model 1.7B --models-dir "%~dp0models"
+if %errorlevel% neq 0 (
+    echo   [ERROR] Failed to download model 1.7B.
+    goto :error_exit
+)
+goto :install_done
+
+:download_model_all
+echo.
+echo   Downloading both models...
+%PYTHON_CMD% app\download_models.py --model all --models-dir "%~dp0models"
+if %errorlevel% neq 0 (
+    echo   [ERROR] Failed to download one or more models.
+    goto :error_exit
+)
+
+:install_done
 
 echo.
 echo ================================================
 echo   Installation completed successfully
+echo   If no model was downloaded, audio generation will not work yet.
+echo   You can run install.bat again later to download a model.
 echo   Run start.bat to launch the system
 echo ================================================
 echo.

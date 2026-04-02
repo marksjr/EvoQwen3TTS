@@ -101,6 +101,7 @@ What `install.bat` does:
 6. Checks or installs PyTorch with CUDA
 7. Installs project dependencies from `app\requirements.txt`
 8. Checks local model folders
+9. Offers to download `0.6B`, `1.7B`, or both automatically if models are missing
 
 Installer behavior:
 
@@ -116,6 +117,14 @@ Place your model folders here:
 - `models\1.7B`
 
 At least one model folder must exist to generate speech.
+
+Easy option for non-technical users:
+
+- run `install.bat`
+- if the installer says models are missing, choose:
+  - `1` to download `0.6B` now
+  - `2` to download `1.7B` now
+  - `3` to download both
 
 ## Startup
 
