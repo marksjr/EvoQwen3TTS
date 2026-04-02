@@ -154,10 +154,7 @@ echo   [WARNING] NVIDIA GPU tools were found, but the GPU name query failed.
 goto :gpu_done
 
 :no_gpu
-echo   [WARNING] nvidia-smi was not found.
-echo   This project works best with an NVIDIA GPU and CUDA support.
-set /p "CONTINUE_ANYWAY=  Continue anyway to use CPU (will be much slower)? (Y/N): "
-if /i not "%CONTINUE_ANYWAY%"=="Y" exit /b 1
+echo   [INFO] NVIDIA not detected. Using CPU runtime.
 set "USE_CPU=1"
 
 :gpu_done
