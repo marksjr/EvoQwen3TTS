@@ -1,0 +1,24 @@
+Third-Party Notice for Evo Qwen3TTS
+
+This repository includes original integration work such as:
+
+- installer scripts
+- launcher scripts
+- FastAPI application code
+- browser interface
+- documentation
+- helper utilities
+
+Those original repository-specific files are provided under the MIT License in the root LICENSE file.
+
+Important:
+
+1. Qwen / Qwen3-TTS models are third-party assets and are not authored by the repository owner.
+2. Qwen / Qwen3-TTS names, model weights, and related assets remain subject to their original upstream license, terms, and attribution requirements.
+3. Any reference voice files, datasets, or sample audio may be subject to separate copyright, licensing, attribution, privacy, or redistribution restrictions.
+4. The MIT License in this repository does not override third-party licenses.
+
+Before redistributing this project publicly, review:
+
+- the upstream Qwen / Alibaba model license and usage terms
+- the origin and redistribution rights for any committed voice or audio files

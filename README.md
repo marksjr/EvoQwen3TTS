@@ -16,6 +16,27 @@ Evo Qwen3TTS is a local Windows-first application for generating speech from tex
 - background startup transcription with live UI status
 - multiple speaking styles and emotions
 
+## Ownership and Licensing
+
+This repository is an integration project. The MIT [`LICENSE`](LICENSE) in the root applies to the original repository-specific code and documentation, such as:
+
+- installer and launcher scripts
+- FastAPI integration code
+- browser UI
+- documentation
+- helper utilities
+
+It does **not** mean the Qwen / Qwen3-TTS models are owned by this repository.
+
+Important:
+
+- Qwen / Qwen3-TTS models are third-party assets from Alibaba / Qwen
+- upstream model names, weights, and related assets remain under their own license and terms
+- any reference voice files or audio datasets may have separate rights and redistribution limits
+- the MIT license here does not replace or override third-party licenses
+
+See [`NOTICE`](NOTICE) for the third-party clarification.
+
 ## Main URLs
 
 - App UI: `http://localhost:5050`
@@ -67,6 +88,8 @@ Root:
 - `README.md`: GitHub landing page
 - `image.png`: main screenshot used by this README
 - `.gitignore`: ignore rules for local and large files
+- `LICENSE`: license for the repository-specific code and documentation
+- `NOTICE`: third-party notice for models and audio assets
 
 Application files:
 
