@@ -79,9 +79,9 @@ Application files:
 
 Local runtime folders:
 
-- [`models`](/C:/wamp64/www/audio_qwen/models): local model folders, not committed
-- [`reference_audio`](/C:/wamp64/www/audio_qwen/reference_audio): local voice files
-- [`output`](/C:/wamp64/www/audio_qwen/output): generated audio files
+- `models/`: local model folders, not committed
+- `reference_audio/`: local voice files
+- `output/`: generated audio files
 
 ## Installation
 
@@ -108,6 +108,8 @@ Installer behavior:
 - if a requirement already exists, it keeps it and continues
 - if a requirement is missing and can be installed automatically, it installs it
 - if a critical requirement fails, installation stops with an error
+- automatic model download requires internet access
+- if Hugging Face access fails, run the installer again or place model folders into `models\` manually
 
 ## Model Setup
 
@@ -125,6 +127,12 @@ Easy option for non-technical users:
   - `1` to download `0.6B` now
   - `2` to download `1.7B` now
   - `3` to download both
+
+Important:
+
+- automatic model download depends on internet access
+- model availability can depend on the upstream source
+- if download is unavailable, you can still install manually by placing the model folders into `models\`
 
 ## Startup
 
@@ -263,6 +271,7 @@ Deletes a custom voice by name without the `.wav` extension.
 This repository is prepared for GitHub with:
 
 - root `README.md`
+- `LICENSE`
 - screenshot image for README
 - cleaner root layout
 - `.gitignore` for local and heavy files

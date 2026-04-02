@@ -9,6 +9,12 @@ Evo Qwen3TTS is a local FastAPI application for text-to-speech generation, voice
 - Swagger: `http://localhost:5050/api-docs`
 - ReDoc: `http://localhost:5050/api-redoc`
 
+## Notes
+
+- automatic model download from the installer requires internet access
+- if model download fails, you can place `0.6B` and/or `1.7B` manually into the root `models\` folder
+- the repository root now includes an MIT `LICENSE`
+
 ## Important Rule
 
 - `voice` selects the speaker timbre
