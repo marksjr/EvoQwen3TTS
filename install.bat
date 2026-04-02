@@ -100,93 +100,118 @@ echo   [OK] Portable Python installed
 goto :python_ok
 
 :create_venv
-if not exist "venv\Scripts\python.exe" (
-    echo   Creating virtual environment...
-    %PYTHON_CMD% -m venv venv
-    if %errorlevel% neq 0 (
-        echo   [ERROR] Failed to create the virtual environment.
-        goto :error_exit
-    )
+if exist "venv\Scripts\python.exe" goto :venv_exists
+
+echo   Creating virtual environment...
+%PYTHON_CMD% -m venv venv
+if errorlevel 1 (
+    echo   [ERROR] Failed to create the virtual environment.
+    goto :error_exit
 )
+
+:venv_exists
 set "PYTHON_CMD=%~dp0venv\Scripts\python.exe"
 set "PIP_CMD=%~dp0venv\Scripts\python.exe -m pip"
 
 :python_ok
 echo.
 echo [2/6] Checking NVIDIA GPU / CUDA...
+set "USE_CPU=0"
 where nvidia-smi >nul 2>&1
-if %errorlevel% equ 0 (
-    for /f "tokens=*" %%i in ('nvidia-smi --query-gpu=name --format=csv,noheader 2^>nul') do echo   [OK] GPU found: %%i
-) else (
-    echo   [WARNING] nvidia-smi was not found.
-    echo   This project requires an NVIDIA GPU with CUDA support.
-    set /p "CONTINUE_ANYWAY=  Continue anyway? (Y/N): "
-    if /i not "%CONTINUE_ANYWAY%"=="Y" goto :error_exit
-)
+if errorlevel 1 goto :no_gpu
+
+for /f "tokens=*" %%i in ('nvidia-smi --query-gpu=name --format=csv,noheader 2^>nul') do echo   [OK] GPU found: %%i
+goto :gpu_check_done
+
+:no_gpu
+echo   [WARNING] nvidia-smi was not found.
+echo   This project requires an NVIDIA GPU with CUDA support.
+set /p "CONTINUE_ANYWAY=  Continue anyway to use CPU (will be much slower)? (Y/N): "
+if /i not "%CONTINUE_ANYWAY%"=="Y" goto :error_exit
+set "USE_CPU=1"
+
+:gpu_check_done
 
 echo.
 echo [3/6] Checking ffmpeg...
 where ffmpeg >nul 2>&1
-if %errorlevel% equ 0 (
-    echo   [OK] ffmpeg found
-) else (
-    if exist "%~dp0ffmpeg\ffmpeg.exe" (
-        echo   [OK] Portable ffmpeg found in ffmpeg\
-        set "PATH=%~dp0ffmpeg;%PATH%"
-    ) else (
-        echo   Installing ffmpeg helper package...
-        %PIP_CMD% install imageio-ffmpeg --no-warn-script-location -q
-        if %errorlevel% neq 0 (
-            echo   [ERROR] Failed to install ffmpeg helper package.
-            goto :error_exit
-        )
-        echo   [OK] ffmpeg helper installed
-    )
+if errorlevel 1 goto :install_ffmpeg_helper
+
+echo   [OK] ffmpeg found
+goto :ffmpeg_done
+
+:install_ffmpeg_helper
+if exist "%~dp0ffmpeg\ffmpeg.exe" (
+    echo   [OK] Portable ffmpeg found in ffmpeg\
+    set "PATH=%~dp0ffmpeg;%PATH%"
+    goto :ffmpeg_done
 )
+
+echo   Installing ffmpeg helper package...
+%PIP_CMD% install imageio-ffmpeg --no-warn-script-location -q
+if errorlevel 1 (
+    echo   [ERROR] Failed to install ffmpeg helper package.
+    goto :error_exit
+)
+echo   [OK] ffmpeg helper installed
+
+:ffmpeg_done
 
 echo.
 echo [4/6] Checking PyTorch...
-if "%USE_CPU%"=="1" (
-    %PYTHON_CMD% -c "import torch; print(torch.__version__)" 2>nul >nul
-    if %errorlevel% equ 0 (
-        for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v is already installed
-    ) else (
-        echo   Installing PyTorch for CPU...
-        %PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cpu --no-warn-script-location -q
-        if %errorlevel% neq 0 (
-            echo   [ERROR] Failed to install PyTorch.
-            goto :error_exit
-        )
-        echo   [OK] PyTorch installed
-    )
-) else (
-    %PYTHON_CMD% -c "import torch; print(torch.cuda.is_available())" 2>nul | findstr "True" >nul 2>&1
-    if %errorlevel% equ 0 (
-        for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v with CUDA is already installed
-    ) else (
-        echo   Installing PyTorch with CUDA 12.6...
-        %PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cu126 --no-warn-script-location -q
-        if %errorlevel% neq 0 (
-            echo   [ERROR] Failed to install PyTorch.
-            goto :error_exit
-        )
-        echo   [OK] PyTorch installed
-    )
+if "%USE_CPU%"=="1" goto :install_pytorch_cpu
+
+%PYTHON_CMD% -c "import torch; print(torch.cuda.is_available())" 2>nul | findstr "True" >nul 2>&1
+if errorlevel 1 goto :install_pytorch_cuda
+
+for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v with CUDA is already installed
+goto :pytorch_done
+
+:install_pytorch_cuda
+echo   Installing PyTorch with CUDA 12.6...
+%PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cu126 --no-warn-script-location -q
+if errorlevel 1 (
+    echo   [ERROR] Failed to install PyTorch.
+    goto :error_exit
 )
+echo   [OK] PyTorch installed
+goto :pytorch_done
+
+:install_pytorch_cpu
+%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2>nul >nul
+if errorlevel 1 goto :do_install_pytorch_cpu
+
+for /f "tokens=*" %%v in ('%PYTHON_CMD% -c "import torch; print(torch.__version__)" 2^>nul') do echo   [OK] PyTorch %%v is already installed
+goto :pytorch_done
+
+:do_install_pytorch_cpu
+echo   Installing PyTorch for CPU...
+%PIP_CMD% install torch torchaudio --index-url https://download.pytorch.org/whl/cpu --no-warn-script-location -q
+if errorlevel 1 (
+    echo   [ERROR] Failed to install PyTorch.
+    goto :error_exit
+)
+echo   [OK] PyTorch installed
+
+:pytorch_done
 
 echo.
 echo [5/6] Installing project dependencies...
 %PYTHON_CMD% -c "import fastapi; import qwen_tts; import whisper; import soundfile" 2>nul
-if %errorlevel% equ 0 (
-    echo   [OK] Dependencies are already installed
-) else (
-    %PIP_CMD% install -r app\requirements.txt --no-warn-script-location -q
-    if %errorlevel% neq 0 (
-        echo   [ERROR] Failed to install project dependencies.
-        goto :error_exit
-    )
-    echo   [OK] Dependencies installed
+if errorlevel 1 goto :install_deps
+
+echo   [OK] Dependencies are already installed
+goto :deps_done
+
+:install_deps
+%PIP_CMD% install -r app\requirements.txt --no-warn-script-location -q
+if errorlevel 1 (
+    echo   [ERROR] Failed to install project dependencies.
+    goto :error_exit
 )
+echo   [OK] Dependencies installed
+
+:deps_done
 
 echo.
 echo [6/6] Checking local models...
