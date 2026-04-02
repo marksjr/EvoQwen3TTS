@@ -17,6 +17,7 @@
     textarea, select { width: 100%; padding: 12px 14px; border: 1px solid #314156; border-radius: 12px; background: #0d1523; color: #ffffff; }
     textarea { min-height: 150px; resize: vertical; }
     .muted { color: #ffffff; font-size: 13px; }
+    .hint { color: #d8e6f5; font-size: 12px; margin-top: 6px; line-height: 1.5; }
     .grid { display: grid; gap: 16px; }
     .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
     .emotions { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
@@ -53,6 +54,7 @@
         <div class="muted">Local text-to-speech, voice cloning, and voice library management.</div>
       </div>
       <div class="links">
+        <a href="/docs.html#quick-start" target="_blank" rel="noopener noreferrer">Quick Start</a>
         <a href="/docs.html" target="_blank" rel="noopener noreferrer">System Docs</a>
         <a href="/api-docs" target="_blank" rel="noopener noreferrer">API Docs</a>
         <a href="/api-redoc" target="_blank" rel="noopener noreferrer">ReDoc</a>
@@ -61,20 +63,23 @@
 
     <div class="panel grid">
       <div>
-        <label for="text">Text to synthesize</label>
-        <textarea id="text" placeholder="Type the text that should be converted into speech..."></textarea>
+        <label for="text">Type your text here</label>
+        <textarea id="text" placeholder="Type or paste the text you want the voice to speak..."></textarea>
+        <div class="hint">Write the exact text you want to hear in the generated audio.</div>
         <div class="muted" style="text-align:right; margin-top:6px;"><span id="charCount">0</span> characters</div>
       </div>
 
       <div>
-        <label>Emotion / speaking style</label>
+        <label>Choose the speaking style</label>
+        <div class="hint">Pick how the voice should sound: neutral, happy, dramatic, whisper, news, and more.</div>
         <div class="emotions" id="emotionGrid"></div>
       </div>
 
       <div class="startup" id="startupStatus"></div>
 
       <div class="voicebox">
-        <label for="voice">Reference voice</label>
+        <label for="voice">Choose the voice</label>
+        <div class="hint">This selects who is speaking. It changes the speaker timbre, not the language of your text.</div>
         <div class="row">
           <select id="countryFilter"><option value="">All languages</option></select>
           <select id="genderFilter">
@@ -94,9 +99,9 @@
         <div class="muted" id="voiceCount" style="margin-top:6px;"></div>
       </div>
 
-      <div class="row">
-        <div>
-          <label for="language">Text language</label>
+        <div class="row">
+          <div>
+          <label for="language">Language of your text</label>
           <select id="language">
             <option value="portuguese">Portuguese</option>
             <option value="english">English</option>
@@ -110,13 +115,15 @@
             <option value="russian">Russian</option>
             <option value="auto">Auto detect</option>
           </select>
+          <div class="hint">Choose the language of what you typed above so the pronunciation sounds correct.</div>
         </div>
         <div>
-          <label for="model">Model</label>
+          <label for="model">Quality and speed</label>
           <select id="model">
             <option value="0.6B">0.6B (Faster)</option>
             <option value="1.7B" selected>1.7B (Higher quality)</option>
           </select>
+          <div class="hint">Use 0.6B for faster generation. Use 1.7B for better quality if your GPU can handle it.</div>
         </div>
       </div>
 
