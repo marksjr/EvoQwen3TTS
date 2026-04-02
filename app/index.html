@@ -84,7 +84,7 @@
 
       <div class="voicebox">
         <label for="voice">Choose the voice</label>
-        <div class="hint">This selects who is speaking. For most users, just pick a voice you like and click Generate Audio.</div>
+        <div class="hint">This selects who is speaking. For most users, just pick a voice you like and click Create Audio.</div>
         <div class="row">
           <select id="countryFilter"><option value="">All languages</option></select>
           <select id="genderFilter">
@@ -96,8 +96,8 @@
         <div class="row" style="margin-top:12px;">
           <select id="voice"><option value="">Loading voices...</option></select>
           <div class="actions">
-            <button type="button" class="btn" onclick="openUploadModal()">Add Voice</button>
-            <button type="button" class="btn danger" id="btnDeleteVoice" onclick="deleteVoice()">Delete</button>
+            <button type="button" class="btn" onclick="openUploadModal()">Add New Voice</button>
+            <button type="button" class="btn danger" id="btnDeleteVoice" onclick="deleteVoice()">Remove Custom Voice</button>
           </div>
         </div>
         <div class="muted" id="voiceInfo" style="margin-top:10px; white-space:pre-line;"></div>
@@ -142,7 +142,7 @@
         </div>
       </details>
 
-      <button class="btn primary" id="btnGenerate" onclick="generate()">Generate Audio</button>
+      <button class="btn primary" id="btnGenerate" onclick="generate()">Create Audio</button>
       <div class="status" id="loading">Generating audio... <span id="timer">0.0s</span></div>
       <div class="error" id="error"></div>
       <div class="result" id="result">
@@ -154,14 +154,14 @@
 
   <div class="modal" id="uploadModal">
     <div class="modal-card">
-      <h2>Add Reference Voice</h2>
-      <p class="muted">Upload a `.wav` file with 5 to 15 seconds of clean speech. The audio will be transcribed automatically.</p>
+      <h2>Add a New Voice</h2>
+      <p class="muted">Upload a `.wav` file with 5 to 15 seconds of clean speech. The system will prepare it automatically.</p>
       <div class="drop" id="dropZone" onclick="document.getElementById('fileInput').click()">Click here or drop a `.wav` file</div>
       <input type="file" id="fileInput" accept=".wav" style="display:none;">
       <div class="muted" id="uploadStatus" style="margin-top:12px; display:none;"></div>
       <div class="actions" style="margin-top:16px;">
-        <button class="btn" onclick="closeUploadModal()">Cancel</button>
-        <button class="btn primary" id="btnUpload" onclick="uploadVoice()" disabled style="width:auto;">Upload</button>
+        <button class="btn" onclick="closeUploadModal()">Close</button>
+        <button class="btn primary" id="btnUpload" onclick="uploadVoice()" disabled style="width:auto;">Add Voice</button>
       </div>
     </div>
   </div>
@@ -346,8 +346,8 @@
       if (voice.parsed.genderLabel) text += ` | Gender: ${voice.parsed.genderLabel}`;
       if (voice.transcription) text += `\nTranscription: "${voice.transcription.slice(0, 120)}${voice.transcription.length > 120 ? "..." : ""}"`;
       text += voice.parsed.isProtected
-        ? `\nDelete: protected system voice`
-        : `\nDelete: custom voice can be removed`;
+        ? `\nRemove option: this built-in voice cannot be removed`
+        : `\nRemove option: this custom voice can be removed`;
       deleteBtn.disabled = voice.parsed.isProtected;
       deleteBtn.style.opacity = voice.parsed.isProtected ? "0.5" : "1";
       deleteBtn.style.cursor = voice.parsed.isProtected ? "not-allowed" : "pointer";
@@ -392,18 +392,18 @@
       const btn = document.getElementById("btnUpload");
       const status = document.getElementById("uploadStatus");
       btn.disabled = true;
-      btn.textContent = "Uploading...";
+      btn.textContent = "Adding...";
       status.style.display = "block";
       status.style.color = "#61dafb";
-      status.textContent = "Uploading and transcribing audio. This may take a few seconds...";
+      status.textContent = "Adding the voice and preparing it. This may take a few seconds...";
       try {
         const formData = new FormData();
         formData.append("file", selectedFile);
         const res = await fetch("/upload-voice", { method: "POST", body: formData });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Upload failed.");
+        if (!res.ok) throw new Error(data.detail || "Could not add the voice.");
         status.style.color = "#58c488";
-        status.textContent = `Voice "${data.name}" added successfully.`;
+        status.textContent = `Voice "${data.name}" is ready to use.`;
         await loadVoices();
         document.getElementById("voice").value = data.name;
         updateVoiceInfo();
@@ -413,7 +413,7 @@
         status.textContent = `Error: ${e.message}`;
       } finally {
         btn.disabled = false;
-        btn.textContent = "Upload";
+        btn.textContent = "Add Voice";
       }
     }
 
@@ -422,15 +422,15 @@
       if (!name) return;
       const voice = voices.find(v => v.name === name);
       if (voice?.parsed?.isProtected) {
-        alert("System voices are protected and cannot be deleted.");
+        alert("Built-in voices cannot be removed.");
         return;
       }
       const label = voice ? voice.parsed.displayName : name;
-      if (!confirm(`Delete the voice "${label}"?\nThis action cannot be undone.`)) return;
+      if (!confirm(`Remove the custom voice "${label}"?\nThis action cannot be undone.`)) return;
       try {
         const res = await fetch(`/voices/${encodeURIComponent(name)}`, { method: "DELETE" });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Delete failed.");
+        if (!res.ok) throw new Error(data.detail || "Could not remove the voice.");
         await loadVoices();
       } catch (e) {
         alert(`Error: ${e.message}`);
