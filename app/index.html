@@ -44,12 +44,6 @@
     .drop { margin-top: 16px; border: 2px dashed #3b4e68; border-radius: 14px; padding: 32px 16px; text-align: center; color: #ffffff; cursor: pointer; }
     .drop.dragover { border-color: #61dafb; color: #61dafb; }
     .drop.has-file { border-color: #58c488; color: #58c488; }
-    .advanced { border: 1px solid #273446; border-radius: 14px; padding: 16px; background: #0f1725; }
-    .advanced summary { cursor: pointer; font-weight: 700; color: #ffffff; }
-    .advanced summary::-webkit-details-marker { display: none; }
-    .advanced summary::after { content: "Show"; float: right; color: #61dafb; font-weight: 400; }
-    .advanced[open] summary::after { content: "Hide"; }
-    .advanced-body { margin-top: 14px; }
     @media (max-width: 640px) { body { padding: 14px; } .panel { padding: 16px; } }
   </style>
 </head>
@@ -104,43 +98,33 @@
         <div class="muted" id="voiceCount" style="margin-top:6px;"></div>
       </div>
 
-      <details class="advanced">
-        <summary>Advanced Options</summary>
-        <div class="advanced-body">
-          <div class="hint">Most users can leave these options as they are. Open this only if you want to change language or quality.</div>
-          <div class="row">
-            <div>
-              <label for="language">Language of your text</label>
-              <select id="language">
-                <option value="portuguese">Portuguese</option>
-                <option value="english">English</option>
-                <option value="spanish">Spanish</option>
-                <option value="french">French</option>
-                <option value="german">German</option>
-                <option value="italian">Italian</option>
-                <option value="japanese">Japanese</option>
-                <option value="chinese">Chinese</option>
-                <option value="korean">Korean</option>
-                <option value="russian">Russian</option>
-                <option value="auto">Auto detect</option>
-              </select>
-              <div class="hint">Change this if the typed text is not in Portuguese.</div>
-            </div>
-            <div>
-              <label for="model">Quality and speed</label>
-              <select id="model">
-                <option value="0.6B">0.6B (Faster)</option>
-                <option value="1.7B" selected>1.7B (Higher quality)</option>
-              </select>
-              <div class="hint">Use 0.6B on weaker GPUs. Use 1.7B for better quality.</div>
-            </div>
-          </div>
-          <div class="links" style="margin-top:14px;">
-            <a href="/api-docs" target="_blank" rel="noopener noreferrer">API Docs</a>
-            <a href="/api-redoc" target="_blank" rel="noopener noreferrer">ReDoc</a>
-          </div>
+      <div class="row">
+        <div>
+          <label for="language">Language of your text</label>
+          <select id="language">
+            <option value="portuguese">Portuguese</option>
+            <option value="english">English</option>
+            <option value="spanish">Spanish</option>
+            <option value="french">French</option>
+            <option value="german">German</option>
+            <option value="italian">Italian</option>
+            <option value="japanese">Japanese</option>
+            <option value="chinese">Chinese</option>
+            <option value="korean">Korean</option>
+            <option value="russian">Russian</option>
+            <option value="auto">Auto detect</option>
+          </select>
+          <div class="hint">Change this if the typed text is not in Portuguese.</div>
         </div>
-      </details>
+        <div>
+          <label for="model">Quality and speed</label>
+          <select id="model">
+            <option value="0.6B">0.6B (Faster)</option>
+            <option value="1.7B" selected>1.7B (Higher quality)</option>
+          </select>
+          <div class="hint">Use 0.6B on weaker GPUs. Use 1.7B for better quality.</div>
+        </div>
+      </div>
 
       <button class="btn primary" id="btnGenerate" onclick="generate()">Create Audio</button>
       <div class="status" id="loading">Generating audio... <span id="timer">0.0s</span></div>
