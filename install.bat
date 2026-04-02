@@ -50,15 +50,16 @@ if exist "venv\Scripts\python.exe" (
     goto :python_ok
 )
 
-where python >nul 2>&1
-if %errorlevel% equ 0 (
-    for /f "tokens=*" %%i in ('python --version 2^>^&1') do set "PY_VER=%%i"
-    echo   [OK] System Python found: %PY_VER%
-    set "PYTHON_CMD=python"
-    set "PIP_CMD=python -m pip"
-    goto :create_venv
-)
+python -c "import sys" >nul 2>&1
+if errorlevel 1 goto :install_portable_python
 
+for /f "tokens=*" %%i in ('python --version 2^>^&1') do set "PY_VER=%%i"
+echo   [OK] System Python found: %PY_VER%
+set "PYTHON_CMD=python"
+set "PIP_CMD=python -m pip"
+goto :create_venv
+
+:install_portable_python
 echo   [INFO] Python not found. Installing portable Python 3.11...
 if not exist "python" mkdir python
 
