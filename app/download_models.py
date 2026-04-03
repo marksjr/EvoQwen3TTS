@@ -6,8 +6,8 @@ from huggingface_hub import snapshot_download
 
 
 MODEL_REPOS = {
-    "0.6B": "Qwen/Qwen3-TTS-0.6B",
-    "1.7B": "Qwen/Qwen3-TTS-1.7B",
+    "0.6B": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+    "1.7B": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
 }
 
 
